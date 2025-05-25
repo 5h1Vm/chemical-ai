@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SURAKSHA: Ultra-Responsive Substance Detector</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1em;
+    }
+    video, canvas {
+      border-radius: 10px;
+      max-width: 100%;
+      width: 100%;
+    }
+    #roiBox {
+      border: 2px solid #00FF00;
+      position: absolute;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .controls {
+      margin-top: 1em;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      background: #00FF00;
+      border: none;
+      color: black;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    #result {
+      margin-top: 1em;
+      padding: 1em;
+      background: #1f1f1f;
+      border-radius: 10px;
+      width: 100%;
+    }
+    .project-title {
+      text-align: center;
+      margin-bottom: 0.2em;
+    }
+    .project-subtitle {
+      font-size: 0.9em;
+      color: #aaa;
+      margin-bottom: 1em;
+      text-align: center;
+      max-width: 700px;
+    }
+  </style>
+</head>
+<body>
+  <h2 class="project-title">🔬 SURAKSHA</h2>
+  <div class="project-subtitle">
+    <strong>Smart Ultra-Responsive Aerogel Kit for Sensitive High-Resolution Analysis</strong>
+  </div>
+
+  <div style="position: relative;">
+    <video id="video" autoplay playsinline></video>
+    <div id="roiBox"></div>
+  </div>
+  
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <div class="controls">
+    <button onclick="captureImage()">📸 Capture</button>
+    <button onclick="resetCamera()">🔄 Reset</button>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const roiBox = document.getElementById('roiBox');
+    const resultDiv = document.getElementById('result');
+    let videoStream;
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        video.srcObject = stream;
+        videoStream = stream;
+        video.play();
+        setTimeout(positionROIBox, 500);
+      });
+
+    function positionROIBox() {
+      const rect = video.getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height) / 2;
+      roiBox.style.width = size + 'px';
+      roiBox.style.height = size + 'px';
+      roiBox.style.left = (rect.width - size) / 2 + 'px';
+      roiBox.style.top = (rect.height - size) / 2 + 'px';
+      roiBox.style.position = 'absolute';
+    }
+
+    function captureImage() {
+      video.pause();
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+
+      // Extract ROI
+      const size = Math.min(canvas.width, canvas.height) / 2;
+      const x = (canvas.width - size) / 2;
+      const y = (canvas.height - size) / 2;
+      const roi = ctx.getImageData(x, y, size, size);
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = size;
+      tempCanvas.height = size;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(roi, 0, 0);
+
+      const dataUrl = tempCanvas.toDataURL('image/jpeg');
+
+      fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl })
+      })
+      .then(res => res.json())
+      .then(data => {
+        resultDiv.innerHTML = `
+          <h3>Detection Result</h3>
+          <p><strong>Substance:</strong> ${data.substance}</p>
+          <p><strong>Color HEX:</strong> ${data.hex}</p>
+          <p><strong>Confidence:</strong> ${data.confidence}%</p>
+          <p><strong>Description:</strong> ${data.info}</p>
+          <p><strong>Toxicity Level:</strong> ${data.toxicity}</p>
+        `;
+      })
+      .catch(err => {
+        resultDiv.innerHTML = "<p>❌ Error in prediction.</p>";
+        console.error(err);
+      });
+    }
+
+    function resetCamera() {
+      video.play();
+      resultDiv.innerHTML = "";
+    }
+
+    window.addEventListener('resize', positionROIBox);
+  </script>
+</body>
+</html>
