@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SURAKSHA: Ultra-Responsive Substance Detector</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <h2 class="project-title">🔬 SURAKSHA</h2>
+    <div class="project-subtitle">
+      <strong>Smart Ultra-Responsive Aerogel Kit for Sensitive High-Resolution Analysis</strong>
+    </div>
+
+    <div style="position: relative">
+      <video id="video" autoplay playsinline></video>
+      <div id="roiBox"></div>
+    </div>
+
+    <canvas id="canvas" style="display: none"></canvas>
+
+    <div class="controls">
+      <button onclick="captureImage()">📸 Capture</button>
+      <button onclick="resetCamera()">🔄 Reset</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script src="/static/js/script.js"></script>
+  </body>
+</html>
